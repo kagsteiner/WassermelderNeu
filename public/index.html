@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wassermelder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="water-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                    </svg>
+                </div>
+                <h1>Wassermelder</h1>
+                <p class="subtitle">Water Consumption Tracker</p>
+            </div>
+            <form id="login-form">
+                <div class="input-group">
+                    <input type="password" id="password-input" placeholder="Enter password" autocomplete="current-password">
+                    <button type="submit" class="btn btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <p id="login-error" class="error-text hidden">Invalid password</p>
+            </form>
+        </div>
+        <div class="background-gradient"></div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="screen hidden">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="water-icon small">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                    </svg>
+                </div>
+                <h1>Wassermelder</h1>
+            </div>
+            <button id="logout-btn" class="btn btn-ghost">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16,17 21,12 16,7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            </button>
+        </header>
+
+        <main class="dashboard-content">
+            <!-- Stats Cards Row -->
+            <section class="stats-row">
+                <!-- Last Interval Card -->
+                <div class="card stat-card last-interval">
+                    <div class="card-header">
+                        <span class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12,6 12,12 16,14"/>
+                            </svg>
+                        </span>
+                        <h3>Last Interval</h3>
+                    </div>
+                    <div class="stat-content" id="last-interval-content">
+                        <div class="stat-loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Year Stats Card -->
+                <div class="card stat-card year-stats">
+                    <div class="card-header">
+                        <span class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </span>
+                        <h3>Year 2026 Statistics</h3>
+                    </div>
+                    <div class="stat-content" id="year-stats-content">
+                        <div class="stat-loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Camera Action Card -->
+                <div class="card action-card">
+                    <div class="card-header">
+                        <span class="card-icon camera-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                        </span>
+                        <h3>New Reading</h3>
+                    </div>
+                    <p class="action-desc">Take a photo of your water meter</p>
+                    <button id="capture-btn" class="btn btn-primary btn-large">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        Capture Photo
+                    </button>
+                    <input type="file" id="photo-input" accept="image/*" capture="environment" hidden>
+                </div>
+            </section>
+
+            <!-- Monthly Table -->
+            <section class="card table-card">
+                <div class="card-header">
+                    <span class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3h18v18H3z"/>
+                            <path d="M3 9h18"/>
+                            <path d="M3 15h18"/>
+                            <path d="M9 3v18"/>
+                            <path d="M15 3v18"/>
+                        </svg>
+                    </span>
+                    <h3>Monthly Consumption (L/day)</h3>
+                </div>
+                <div class="table-container">
+                    <table id="monthly-table">
+                        <thead>
+                            <tr id="monthly-headers"></tr>
+                        </thead>
+                        <tbody>
+                            <tr id="monthly-values"></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Weekly Chart -->
+            <section class="card chart-card">
+                <div class="card-header">
+                    <span class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                    </span>
+                    <h3>Weekly Consumption (Last 12 Months)</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="weekly-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Readings History -->
+            <section class="card history-card">
+                <div class="card-header">
+                    <span class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </span>
+                    <h3>Reading History</h3>
+                </div>
+                <div class="history-list" id="history-list">
+                    <div class="stat-loading">Loading...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Capture Water Meter</h2>
+                <button class="btn btn-ghost modal-close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="camera-preview" class="camera-preview">
+                    <video id="camera-video" autoplay playsinline></video>
+                    <canvas id="camera-canvas" hidden></canvas>
+                </div>
+                <div id="captured-preview" class="captured-preview hidden">
+                    <img id="captured-image" alt="Captured photo">
+                </div>
+                <div id="analysis-result" class="analysis-result hidden">
+                    <div class="analysis-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <div class="analysis-value">
+                        <span class="label">Detected Value</span>
+                        <span class="value" id="detected-value">0.000</span>
+                        <span class="unit">m³</span>
+                    </div>
+                    <div class="analysis-confidence" id="analysis-confidence"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="retake-btn" class="btn btn-ghost hidden">Retake</button>
+                <button id="snap-btn" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    Take Photo
+                </button>
+                <button id="analyze-btn" class="btn btn-primary hidden">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.3-4.3"/>
+                    </svg>
+                    Analyze
+                </button>
+                <button id="save-btn" class="btn btn-success hidden">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Save Reading
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loading-text">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
