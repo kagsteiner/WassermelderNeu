@@ -1,5 +1,9 @@
 # Render.com deployment configuration
 # https://render.com/docs/blueprint-spec
+#
+# NOTE: Free tier does not support persistent disks.
+# Data will be stored in project directory but won't persist across deploys.
+# For persistent data, upgrade to a paid plan and uncomment the disk section below.
 
 services:
   - type: web
@@ -19,7 +23,8 @@ services:
         sync: false
       - key: SESSION_SECRET
         generateValue: true
-    disk:
-      name: wassermelder-data
-      mountPath: /var/data
-      sizeGB: 1
+    # Uncomment below for paid plans with persistent storage:
+    # disk:
+    #   name: wassermelder-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

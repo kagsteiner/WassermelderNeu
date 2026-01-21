@@ -10,17 +10,33 @@ const sharp = require('sharp');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuration - Use /var/data on Render.com for persistent storage
+// Configuration - Use /var/data on Render.com if disk is mounted, otherwise use project dir
 const IS_RENDER = process.env.RENDER === 'true';
-const DATA_DIR = IS_RENDER ? '/var/data' : __dirname;
+const RENDER_DISK_PATH = '/var/data';
+
+// Determine data directory - check if Render disk is available
+let DATA_DIR = __dirname;
+if (IS_RENDER) {
+    try {
+        // Check if /var/data exists and is writable (disk is mounted)
+        if (fs.existsSync(RENDER_DISK_PATH)) {
+            fs.accessSync(RENDER_DISK_PATH, fs.constants.W_OK);
+            DATA_DIR = RENDER_DISK_PATH;
+            console.log('Using Render persistent disk at /var/data');
+        } else {
+            // Use project directory (data won't persist across deploys on free tier)
+            console.log('No persistent disk found, using project directory (data may not persist)');
+        }
+    } catch (err) {
+        console.log('Render disk not writable, using project directory');
+    }
+}
+
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const IMAGES_DIR = path.join(DATA_DIR, 'images');
 const APP_PASSWORD = process.env.APP_PASSWORD || 'wasser2024';
 
 // Ensure directories exist
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
 if (!fs.existsSync(IMAGES_DIR)) {
     fs.mkdirSync(IMAGES_DIR, { recursive: true });
 }
@@ -46,7 +62,7 @@ function getOpenAI() {
 
 // Multer configuration for image uploads
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
@@ -59,7 +75,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'wassermelder-secret-key-2024',
     resave: false,
     saveUninitialized: false,
-    cookie: { 
+    cookie: {
         secure: process.env.NODE_ENV === 'production' && process.env.RENDER ? true : false,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
@@ -100,7 +116,7 @@ function calculateStats(readings) {
 
     // Sort readings by date
     const sorted = [...readings].sort((a, b) => new Date(a.date) - new Date(b.date));
-    
+
     // Last interval calculation
     const lastReading = sorted[sorted.length - 1];
     const prevReading = sorted[sorted.length - 2];
@@ -120,14 +136,14 @@ function calculateStats(readings) {
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const yearReadings = sorted.filter(r => new Date(r.date) >= startOfYear);
-    
+
     let yearStats = null;
     if (yearReadings.length >= 2) {
         const firstYearReading = yearReadings[0];
         const lastYearReading = yearReadings[yearReadings.length - 1];
         const yearDays = (new Date(lastYearReading.date) - new Date(firstYearReading.date)) / (1000 * 60 * 60 * 24);
         const yearConsumption = (lastYearReading.value - firstYearReading.value) * 1000;
-        
+
         yearStats = {
             totalLiters: Math.round(yearConsumption),
             avgLitersPerDay: yearDays > 0 ? Math.round((yearConsumption / yearDays) * 10) / 10 : 0,
@@ -140,7 +156,7 @@ function calculateStats(readings) {
     for (let i = 11; i >= 0; i--) {
         const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-        
+
         const monthReadings = sorted.filter(r => {
             const d = new Date(r.date);
             return d >= monthDate && d <= monthEnd;
@@ -149,14 +165,14 @@ function calculateStats(readings) {
         // Find readings that span this month
         const readingsBefore = sorted.filter(r => new Date(r.date) < monthDate);
         const readingsInOrBefore = sorted.filter(r => new Date(r.date) <= monthEnd);
-        
+
         let consumption = 0;
         let days = 0;
-        
+
         if (readingsBefore.length > 0 && readingsInOrBefore.length > readingsBefore.length) {
             const startReading = readingsBefore[readingsBefore.length - 1];
             const endReading = readingsInOrBefore[readingsInOrBefore.length - 1];
-            
+
             if (new Date(endReading.date) > new Date(startReading.date)) {
                 const totalDays = (new Date(endReading.date) - new Date(startReading.date)) / (1000 * 60 * 60 * 24);
                 const totalConsumption = (endReading.value - startReading.value) * 1000;
@@ -175,29 +191,29 @@ function calculateStats(readings) {
     const weeklyData = [];
     const oneYear = 365 * 24 * 60 * 60 * 1000;
     const yearAgo = new Date(now.getTime() - oneYear);
-    
+
     for (let i = 51; i >= 0; i--) {
         const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
         const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-        
+
         // Find readings around this week
         const readingsBefore = sorted.filter(r => new Date(r.date) <= weekStart);
         const readingsAfter = sorted.filter(r => new Date(r.date) <= weekEnd);
-        
+
         let litersPerDay = null;
-        
+
         if (readingsBefore.length > 0 && readingsAfter.length > readingsBefore.length) {
             const startReading = readingsBefore[readingsBefore.length - 1];
             const endReading = readingsAfter[readingsAfter.length - 1];
-            
+
             const days = (new Date(endReading.date) - new Date(startReading.date)) / (1000 * 60 * 60 * 24);
             const consumption = (endReading.value - startReading.value) * 1000;
-            
+
             if (days > 0) {
                 litersPerDay = Math.round((consumption / days) * 10) / 10;
             }
         }
-        
+
         weeklyData.push({
             week: weekStart.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
             litersPerDay: litersPerDay
@@ -216,7 +232,7 @@ async function analyzeWaterMeterImage(imageBuffer) {
     try {
         const client = getOpenAI();
         const base64Image = imageBuffer.toString('base64');
-        
+
         const response = await client.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
@@ -248,13 +264,13 @@ The value should be a number representing cubic meters with up to 3 decimal plac
         });
 
         const content = response.choices[0].message.content;
-        
+
         // Parse JSON from response
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
         }
-        
+
         throw new Error('Could not parse meter reading from response');
     } catch (error) {
         console.error('Error analyzing image:', error);
@@ -272,7 +288,7 @@ app.get('/api/auth/status', (req, res) => {
 // Login
 app.post('/api/auth/login', (req, res) => {
     const { password } = req.body;
-    
+
     if (password === APP_PASSWORD) {
         req.session.authenticated = true;
         res.json({ success: true });
@@ -291,7 +307,7 @@ app.post('/api/auth/logout', (req, res) => {
 app.get('/api/data', requireAuth, (req, res) => {
     const data = loadData();
     const stats = calculateStats(data.readings);
-    
+
     res.json({
         readings: data.readings,
         stats
@@ -326,11 +342,11 @@ app.post('/api/reading', requireAuth, upload.single('photo'), async (req, res) =
 
         // Analyze with LLM
         const analysis = await analyzeWaterMeterImage(optimizedBuffer);
-        
+
         if (!analysis.value || typeof analysis.value !== 'number') {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Could not read meter value from image',
-                analysis 
+                analysis
             });
         }
 
@@ -369,7 +385,7 @@ app.post('/api/reading', requireAuth, upload.single('photo'), async (req, res) =
 // Manual reading entry (fallback if LLM fails)
 app.post('/api/reading/manual', requireAuth, (req, res) => {
     const { value, date } = req.body;
-    
+
     if (typeof value !== 'number' || value < 0) {
         return res.status(400).json({ error: 'Invalid value' });
     }
@@ -400,13 +416,13 @@ app.post('/api/reading/manual', requireAuth, (req, res) => {
 app.delete('/api/reading/:id', requireAuth, (req, res) => {
     const data = loadData();
     const readingIndex = data.readings.findIndex(r => r.id === req.params.id);
-    
+
     if (readingIndex === -1) {
         return res.status(404).json({ error: 'Reading not found' });
     }
 
     const reading = data.readings[readingIndex];
-    
+
     // Delete associated image if exists
     if (reading.image) {
         const imagePath = path.join(IMAGES_DIR, reading.image);
