@@ -1,5 +1,7 @@
 # Wassermelder
 
+This is a personal project for my own use only. It is 100% vibe coded and probably not interesting for you. Have to publish it to github because I want to try out render.com's automatic deployment after github commits.
+
 A water meter tracking application that uses AI (GPT-4 Vision) to read water meter values from photos and track water consumption over time.
 
 ![Wassermelder Screenshot](https://via.placeholder.com/800x400/0a0a0b/3b82f6?text=Wassermelder)
