@@ -57,7 +57,8 @@
         
         const response = await fetch(endpoint, {
             ...options,
-            headers
+            headers,
+            credentials: 'same-origin' // Include cookies for session auth
         });
 
         if (!response.ok) {
@@ -464,7 +465,8 @@
 
             const response = await fetch('/api/reading', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin' // Include cookies for session auth
             });
 
             const result = await response.json();
